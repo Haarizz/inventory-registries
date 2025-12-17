@@ -1,0 +1,14 @@
+# ===== Frontend =====
+inventory-registries-frontend/node_modules/
+inventory-registries-frontend/dist/
+inventory-registries-frontend/.env
+
+# ===== Backend =====
+inventory-registries-backend/target/
+inventory-registries-backend/.env
+
+# ===== General =====
+.DS_Store
+*.log
+.idea/
+.vscode/
