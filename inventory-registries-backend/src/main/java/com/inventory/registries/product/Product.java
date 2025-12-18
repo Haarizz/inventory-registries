@@ -1,52 +1,58 @@
 package com.inventory.registries.product;
 
 import com.inventory.registries.brand.Brand;
-import com.inventory.registries.subdepartment.SubDepartment;
 import com.inventory.registries.unit.Unit;
-import com.inventory.registries.common.Auditable;
+import com.inventory.registries.subdepartment.SubDepartment;
 import jakarta.persistence.*;
-
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "products")
-public class Product extends Auditable{
+public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    /**
+     * Product code is a permanent identifier.
+     * It must be globally unique and never reused.
+     */
+    @Column(nullable = false, length = 50, unique = true)
     private String code;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 150)
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "brand_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "brand_id")
     private Brand brand;
 
-    @ManyToOne
-    @JoinColumn(name = "sub_department_id", nullable = false)
-    private SubDepartment subDepartment;
-
-    @ManyToOne
-    @JoinColumn(name = "unit_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "unit_id")
     private Unit unit;
 
-    @Column(nullable = false)
-    private BigDecimal sellingPrice;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "sub_department_id")
+    private SubDepartment subDepartment;
 
     @Column(nullable = false)
-    private BigDecimal costPrice;
+    private Double sellingPrice;
 
+    @Column(nullable = false)
+    private Double costPrice;
+
+    /**
+     * Temporary stock field.
+     * Future updates must go via Stock Taking approval.
+     */
     @Column(nullable = false)
     private Integer stock = 0;
 
-    private Integer reorderLevel;
-
+    /**
+     * Soft delete flag.
+     */
     @Column(nullable = false)
-    private boolean active = true;
+    private Boolean active = true;
 
 	public Long getId() {
 		return id;
@@ -80,14 +86,6 @@ public class Product extends Auditable{
 		this.brand = brand;
 	}
 
-	public SubDepartment getSubDepartment() {
-		return subDepartment;
-	}
-
-	public void setSubDepartment(SubDepartment subDepartment) {
-		this.subDepartment = subDepartment;
-	}
-
 	public Unit getUnit() {
 		return unit;
 	}
@@ -96,19 +94,27 @@ public class Product extends Auditable{
 		this.unit = unit;
 	}
 
-	public BigDecimal getSellingPrice() {
+	public SubDepartment getSubDepartment() {
+		return subDepartment;
+	}
+
+	public void setSubDepartment(SubDepartment subDepartment) {
+		this.subDepartment = subDepartment;
+	}
+
+	public Double getSellingPrice() {
 		return sellingPrice;
 	}
 
-	public void setSellingPrice(BigDecimal sellingPrice) {
+	public void setSellingPrice(Double sellingPrice) {
 		this.sellingPrice = sellingPrice;
 	}
 
-	public BigDecimal getCostPrice() {
+	public Double getCostPrice() {
 		return costPrice;
 	}
 
-	public void setCostPrice(BigDecimal costPrice) {
+	public void setCostPrice(Double costPrice) {
 		this.costPrice = costPrice;
 	}
 
@@ -120,22 +126,13 @@ public class Product extends Auditable{
 		this.stock = stock;
 	}
 
-	public Integer getReorderLevel() {
-		return reorderLevel;
-	}
-
-	public void setReorderLevel(Integer reorderLevel) {
-		this.reorderLevel = reorderLevel;
-	}
-
-	public boolean isActive() {
+	public Boolean getActive() {
 		return active;
 	}
 
-	public void setActive(boolean active) {
+	public void setActive(Boolean active) {
 		this.active = active;
 	}
-    
-    
-}
 
+    // getters & setters
+}

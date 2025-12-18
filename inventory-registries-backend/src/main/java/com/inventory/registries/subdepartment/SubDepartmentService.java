@@ -15,9 +15,8 @@ public class SubDepartmentService {
     private final SubDepartmentRepository repo;
     private final DepartmentRepository departmentRepo;
 
-    public SubDepartmentService(
-            SubDepartmentRepository repo,
-            DepartmentRepository departmentRepo) {
+    public SubDepartmentService(SubDepartmentRepository repo,
+                                DepartmentRepository departmentRepo) {
         this.repo = repo;
         this.departmentRepo = departmentRepo;
     }
@@ -25,14 +24,16 @@ public class SubDepartmentService {
     // CREATE
     public SubDepartment create(Long departmentId, SubDepartment subDepartment) {
 
-        if (repo.existsByNameIgnoreCaseAndDepartmentIdAndActiveTrue(
-                subDepartment.getName(), departmentId)) {
-            throw new DuplicateResourceException("SubDepartment already exists");
-        }
-
-        Department department = departmentRepo.findById(departmentId)
+        Department department = departmentRepo.findByIdAndActiveTrue(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
 
+        String name = subDepartment.getName().trim();
+
+        if (repo.existsByNameIgnoreCaseAndDepartmentIdAndActiveTrue(name, departmentId)) {
+            throw new DuplicateResourceException("Sub-department already exists");
+        }
+
+        subDepartment.setName(name);
         subDepartment.setDepartment(department);
         subDepartment.setActive(true);
 
@@ -42,25 +43,37 @@ public class SubDepartmentService {
     // UPDATE
     public SubDepartment update(Long id, SubDepartment data) {
 
-        SubDepartment sub = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("SubDepartment not found"));
+        SubDepartment sub = repo.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
 
-        sub.setName(data.getName());
+        String newName = data.getName().trim();
+        Long deptId = sub.getDepartment().getId();
+
+        if (!sub.getName().equalsIgnoreCase(newName)
+                && repo.existsByNameIgnoreCaseAndDepartmentIdAndActiveTrue(newName, deptId)) {
+            throw new DuplicateResourceException("Sub-department already exists");
+        }
+
+        sub.setName(newName);
         return repo.save(sub);
     }
 
-    // LIST
+    // LIST BY DEPARTMENT
     public List<SubDepartment> list(Long departmentId) {
         return repo.findByDepartmentIdAndActiveTrue(departmentId);
     }
 
-    // DELETE (soft)
+    // DELETE (SOFT)
     public void delete(Long id) {
 
-        SubDepartment sub = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("SubDepartment not found"));
+        SubDepartment sub = repo.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
 
         sub.setActive(false);
         repo.save(sub);
     }
+    public List<SubDepartment> listAll() {
+        return repo.findAllByActiveTrue();
+    }
+
 }

@@ -17,6 +17,10 @@ public class StockTaking extends Auditable {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StockStatus status;
+
     @Column(nullable = false)
     private Integer systemStock;
 
@@ -27,7 +31,32 @@ public class StockTaking extends Auditable {
     private Integer variance;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private Boolean active = true;
+    
+    @Column(name = "approved_by")
+    private String approvedBy;
+
+
+    @PrePersist
+    public void onCreate() {
+        if (status == null) {
+            status = StockStatus.DRAFT;
+        }
+    }
+
+    public enum StockStatus {
+        DRAFT,
+        APPROVED,
+        APPLIED,
+        REJECTED
+    }
+    public String getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(String approvedBy) {
+        this.approvedBy = approvedBy;
+    }
 
 	public Long getId() {
 		return id;
@@ -43,6 +72,14 @@ public class StockTaking extends Auditable {
 
 	public void setProduct(Product product) {
 		this.product = product;
+	}
+
+	public StockStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(StockStatus status) {
+		this.status = status;
 	}
 
 	public Integer getSystemStock() {
@@ -69,15 +106,15 @@ public class StockTaking extends Auditable {
 		this.variance = variance;
 	}
 
-	public boolean isActive() {
+	public Boolean getActive() {
 		return active;
 	}
 
-	public void setActive(boolean active) {
+	public void setActive(Boolean active) {
 		this.active = active;
 	}
 
     // getters & setters
-    
-    
 }
+
+

@@ -18,30 +18,43 @@ public class UnitService {
 
     // CREATE
     public Unit create(Unit unit) {
-        if (repo.existsByNameIgnoreCase(unit.getName())) {
+        String name = unit.getName().trim();
+
+        if (repo.existsByNameIgnoreCaseAndActiveTrue(name)) {
             throw new DuplicateResourceException("Unit already exists");
         }
+
+        unit.setName(name);
         unit.setActive(true);
         return repo.save(unit);
     }
 
     // UPDATE
     public Unit update(Long id, Unit data) {
-        Unit unit = repo.findById(id)
+
+        Unit unit = repo.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found"));
 
-        unit.setName(data.getName());
+        String newName = data.getName().trim();
+
+        if (!unit.getName().equalsIgnoreCase(newName)
+                && repo.existsByNameIgnoreCaseAndActiveTrue(newName)) {
+            throw new DuplicateResourceException("Unit already exists");
+        }
+
+        unit.setName(newName);
         return repo.save(unit);
     }
 
     // LIST
     public List<Unit> list() {
-        return repo.findByActiveTrue();
+        return repo.findAllByActiveTrue();
     }
 
-    // DELETE (soft)
+    // DELETE (SOFT)
     public void delete(Long id) {
-        Unit unit = repo.findById(id)
+
+        Unit unit = repo.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found"));
 
         unit.setActive(false);

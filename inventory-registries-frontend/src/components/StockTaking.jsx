@@ -14,7 +14,10 @@ import {
   fetchStockTakings,
   createStockTaking,
   deleteStockTaking,
+  approveStockTaking,
+  applyStockTaking,
 } from "../api/stockTakingApi";
+
 
 import { fetchProducts } from "../api/productApi";
 
@@ -82,6 +85,27 @@ const StockTaking = () => {
       alert("Failed to delete record.");
     }
   };
+
+  const handleApprove = async (id) => {
+  if (!window.confirm("Approve this stock audit?")) return;
+  try {
+    await approveStockTaking(id);
+    loadData();
+  } catch (err) {
+    alert("Approval failed.");
+  }
+};
+
+const handleApply = async (id) => {
+  if (!window.confirm("Apply this stock adjustment to product stock?")) return;
+  try {
+    await applyStockTaking(id);
+    loadData();
+  } catch (err) {
+    alert("Apply failed.");
+  }
+};
+
 
   // --- ANALYTICS & FILTERING ---
   const filtered = records.filter((r) =>
@@ -289,8 +313,14 @@ const StockTaking = () => {
           </div>
           <div>
             <div className="stat-title">Net Variance</div>
-            <div className="stat-value" style={{color: netVariance < 0 ? '#ef4444' : 'var(--text-primary)'}}>
-              {netVariance > 0 ? "+" : ""}{netVariance}
+            <div
+              className="stat-value"
+              style={{
+                color: netVariance < 0 ? "#ef4444" : "var(--text-primary)",
+              }}
+            >
+              {netVariance > 0 ? "+" : ""}
+              {netVariance}
             </div>
           </div>
         </div>
@@ -325,6 +355,7 @@ const StockTaking = () => {
               <th>System Stock</th>
               <th>Physical Stock</th>
               <th>Variance</th>
+              <th>Status</th>
               <th style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
@@ -332,34 +363,95 @@ const StockTaking = () => {
             {filtered.length ? (
               filtered.map((r) => {
                 const variance = r.variance || 0;
+
                 let varClass = "variance-neutral";
                 if (variance > 0) varClass = "variance-positive";
                 if (variance < 0) varClass = "variance-negative";
 
                 return (
                   <tr key={r.id}>
-                    <td><input type="checkbox" /></td>
+                    <td>
+                      <input type="checkbox" disabled />
+                    </td>
+
                     <td style={{ fontWeight: 600 }}>{r.product?.name}</td>
+
                     <td>{r.systemStock}</td>
                     <td>{r.physicalStock}</td>
+
                     <td className={varClass}>
-                      {variance > 0 ? "+" : ""}{variance}
+                      {variance > 0 ? "+" : ""}
+                      {variance}
                     </td>
-                    <td style={{ textAlign: "right" }}>
-                      <button 
-                        className="icon-action delete" 
-                        onClick={() => handleDelete(r.id)} 
-                        title="Delete Audit"
+
+                    {/* ✅ STATUS COLUMN */}
+                    <td>
+                      <span
+                        className="badge"
+                        style={{
+                          background:
+                            r.status === "DRAFT"
+                              ? "rgba(107,114,128,0.1)"
+                              : r.status === "APPROVED"
+                              ? "rgba(245,158,11,0.1)"
+                              : "rgba(16,185,129,0.1)",
+                          color:
+                            r.status === "DRAFT"
+                              ? "#6b7280"
+                              : r.status === "APPROVED"
+                              ? "#f59e0b"
+                              : "#10b981",
+                        }}
                       >
-                        <FaTrash />
-                      </button>
+                        {r.status}
+                      </span>
+                    </td>
+
+                    {/* ✅ ACTIONS BASED ON STATUS */}
+                    <td style={{ textAlign: "right" }}>
+                      {r.status === "DRAFT" && (
+                        <>
+                          <button
+                            className="icon-action"
+                            title="Approve"
+                            onClick={() => handleApprove(r.id)}
+                          >
+                            <FaCheck />
+                          </button>
+
+                          <button
+                            className="icon-action delete"
+                            title="Delete Audit"
+                            onClick={() => handleDelete(r.id)}
+                          >
+                            <FaTrash />
+                          </button>
+                        </>
+                      )}
+
+                      {r.status === "APPROVED" && (
+                        <button
+                          className="icon-action"
+                          title="Apply Stock"
+                          onClick={() => handleApply(r.id)}
+                        >
+                          <FaChartLine />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: "center", padding: 40, color: 'var(--text-secondary)' }}>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: "center",
+                    padding: 40,
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   No stock taking records found.
                 </td>
               </tr>
@@ -372,18 +464,36 @@ const StockTaking = () => {
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal-panel">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "24px",
+              }}
+            >
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
                 New Stock Taking
               </h2>
-              <button onClick={() => setShowModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-secondary)" }}>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.2rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
                 <FaTimes />
               </button>
             </div>
 
             <form onSubmit={handleSave}>
               <div className="form-control">
-                <label>Product <span style={{ color: "red" }}>*</span></label>
+                <label>
+                  Product <span style={{ color: "red" }}>*</span>
+                </label>
                 <select
                   value={productId}
                   onChange={(e) => setProductId(e.target.value)}
@@ -399,7 +509,9 @@ const StockTaking = () => {
               </div>
 
               <div className="form-control">
-                <label>Physical Count <span style={{ color: "red" }}>*</span></label>
+                <label>
+                  Physical Count <span style={{ color: "red" }}>*</span>
+                </label>
                 <input
                   type="number"
                   placeholder="Enter counted quantity"
@@ -408,7 +520,14 @@ const StockTaking = () => {
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 24,
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-outline"
@@ -424,7 +543,6 @@ const StockTaking = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

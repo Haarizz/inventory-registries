@@ -2,6 +2,8 @@ package com.inventory.registries.unit;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,22 +17,30 @@ public class UnitController {
     }
 
     @PostMapping
-    public Unit create(@RequestBody Unit unit) {
-        return service.create(unit);
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+    public ResponseEntity<Unit> create(@RequestBody Unit unit) {
+        return ResponseEntity.ok(service.create(unit));
     }
 
     @PutMapping("/{id}")
-    public Unit update(@PathVariable Long id, @RequestBody Unit unit) {
-        return service.update(id, unit);
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+    public ResponseEntity<Unit> update(
+            @PathVariable Long id,
+            @RequestBody Unit unit) {
+
+        return ResponseEntity.ok(service.update(id, unit));
     }
 
     @GetMapping
-    public List<Unit> list() {
-        return service.list();
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SUPERVISOR','ACCOUNTANT')")
+    public ResponseEntity<List<Unit>> list() {
+        return ResponseEntity.ok(service.list());
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

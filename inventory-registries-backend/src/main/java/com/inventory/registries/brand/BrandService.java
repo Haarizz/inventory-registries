@@ -18,33 +18,47 @@ public class BrandService {
 
     // CREATE
     public Brand create(Brand brand) {
-        if (repo.existsByNameIgnoreCase(brand.getName())) {
+        String name = brand.getName().trim();
+
+        if (repo.existsByNameIgnoreCaseAndActiveTrue(name)) {
             throw new DuplicateResourceException("Brand already exists");
         }
+
+        brand.setName(name);
         brand.setActive(true);
         return repo.save(brand);
     }
 
     // UPDATE
     public Brand update(Long id, Brand data) {
-        Brand brand = repo.findById(id)
+
+        Brand brand = repo.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found"));
 
-        brand.setName(data.getName());
+        String newName = data.getName().trim();
+
+        if (!brand.getName().equalsIgnoreCase(newName)
+                && repo.existsByNameIgnoreCaseAndActiveTrue(newName)) {
+            throw new DuplicateResourceException("Brand already exists");
+        }
+
+        brand.setName(newName);
         return repo.save(brand);
     }
 
     // LIST
     public List<Brand> list() {
-        return repo.findByActiveTrue();
+        return repo.findAllByActiveTrue();
     }
 
-    // DELETE (soft)
+    // DELETE (SOFT)
     public void delete(Long id) {
-        Brand brand = repo.findById(id)
+
+        Brand brand = repo.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand not found"));
 
         brand.setActive(false);
         repo.save(brand);
     }
 }
+

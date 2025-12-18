@@ -17,19 +17,36 @@ import {
   FaSun,
   FaSignOutAlt,
   FaChevronDown,
-  FaChevronUp
+  FaChevronUp,
+  FaCog // Added for Settings
 } from "react-icons/fa";
+import { hasRole, logout } from "../api/auth";
+import { useNavigate } from "react-router-dom";
+
 
 const Sidebar = ({ children }) => {
   // --- STATE ---
   const [collapsed, setCollapsed] = useState(false);
-  const [isDark, setIsDark] = useState(false); // Light mode default
+
+  // 1. Initialize state from LocalStorage
+  const [isDark, setIsDark] = useState(() => {
+    const savedTheme = localStorage.getItem("app-theme");
+    return savedTheme === "dark"; 
+  });
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
   // State specifically for the Departments Dropdown
   const [deptOpen, setDeptOpen] = useState(false);
   const location = useLocation();
+
+  // --- MOCK USER ROLE (Replace with actual auth logic) ---
+
+  // 2. Save to LocalStorage whenever isDark changes
+  useEffect(() => {
+    localStorage.setItem("app-theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
   // --- RESPONSIVE HANDLER ---
   useEffect(() => {
@@ -54,26 +71,91 @@ const Sidebar = ({ children }) => {
     }
   }, [location.pathname]);
 
-  // --- MENU ITEMS (Reordered as requested) ---
+  // --- MENU ITEMS ---
   const menuItems = [
-    { path: "/", label: "Dashboard", icon: <FaTachometerAlt /> },
-    { 
+    {
+      path: "/",
+      label: "Dashboard",
+      icon: <FaTachometerAlt />,
+      roles: [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "MANAGER",
+        "SUPERVISOR",
+        "STAFF",
+        "CASHIER",
+        "ACCOUNTANT",
+        "AUDITOR",
+      ],
+    },
+
+    {
       id: "dept-group",
-      label: "Departments", 
+      label: "Departments",
       icon: <FaBuilding />,
       isDropdown: true,
+      roles: ["SUPER_ADMIN", "ADMIN"],
       subItems: [
         { path: "/departments", label: "All Departments" },
-        { path: "/sub-departments", label: "Sub-Departments" }
-      ]
+        { path: "/sub-departments", label: "Sub-Departments" },
+      ],
     },
-    { path: "/brands", label: "Brands", icon: <FaTags /> },
-    { path: "/units", label: "Units (UoM)", icon: <FaBalanceScale /> },
-    { path: "/products", label: "Products / Services", icon: <FaBoxOpen /> },
-    { path: "/stock-taking", label: "Stock Taking", icon: <FaClipboardList /> },
-    { path: "/price-levels", label: "Price Levels", icon: <FaDollarSign /> }
+
+    {
+      path: "/brands",
+      label: "Brands",
+      icon: <FaTags />,
+      roles: ["SUPER_ADMIN", "ADMIN"],
+    },
+
+    {
+      path: "/units",
+      label: "Units (UoM)",
+      icon: <FaBalanceScale />,
+      roles: ["SUPER_ADMIN", "ADMIN"],
+    },
+
+    {
+      path: "/products",
+      label: "Products / Services",
+      icon: <FaBoxOpen />,
+      roles: ["SUPER_ADMIN", "ADMIN", "MANAGER","STAFF"],
+    },
+
+    {
+      path: "/stock-taking",
+      label: "Stock Taking",
+      icon: <FaClipboardList />,
+      roles: ["SUPER_ADMIN", "ADMIN", "SUPERVISOR", "STAFF"],
+    },
+
+    {
+      path: "/price-levels",
+      label: "Price Levels",
+      icon: <FaDollarSign />,
+      roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"],
+    },
+
+    {
+      path: "/settings",
+      label: "Settings",
+      icon: <FaCog />,
+      roles: ["SUPER_ADMIN","ADMIN"],
+    },
+
+    {
+      path: "/notifications",
+      label: "Notifications",
+      icon: <FaTachometerAlt />,
+      roles: [
+        "SUPER_ADMIN",
+        "ADMIN"
+      ],
+    }
   ];
 
+  
+  
   const handleDeptClick = () => {
     if (collapsed) {
       setCollapsed(false);
@@ -82,6 +164,8 @@ const Sidebar = ({ children }) => {
       setDeptOpen(!deptOpen);
     }
   };
+  const navigate = useNavigate();
+
 
   // --- STYLES (EXACT OLD UI PRESERVED) ---
   const css = `
@@ -371,7 +455,9 @@ const Sidebar = ({ children }) => {
       <style>{css}</style>
 
       {/* Mobile Overlay & Trigger */}
-      {isMobile && mobileOpen && <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />}
+      {isMobile && mobileOpen && (
+        <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />
+      )}
       {isMobile && !mobileOpen && (
         <button className="mobile-trigger" onClick={() => setMobileOpen(true)}>
           <FaBars />
@@ -379,82 +465,104 @@ const Sidebar = ({ children }) => {
       )}
 
       {/* SIDEBAR */}
-      <aside className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
-        
+      <aside
+        className={`sidebar ${collapsed ? "collapsed" : ""} ${
+          mobileOpen ? "mobile-open" : ""
+        }`}
+      >
         <div className="sidebar-header">
           {(!collapsed || isMobile) && (
             <div className="brand">
-              <FaBoxOpen className="brand-icon" style={{fontSize: '1.2rem', flexShrink: 0}} />
+              <FaBoxOpen
+                className="brand-icon"
+                style={{ fontSize: "1.2rem", flexShrink: 0 }}
+              />
               <span>Inventory</span>
             </div>
           )}
-          
+
           {isMobile ? (
-            <button className="icon-btn" onClick={() => setMobileOpen(false)}><FaTimes /></button>
+            <button className="icon-btn" onClick={() => setMobileOpen(false)}>
+              <FaTimes />
+            </button>
           ) : (
-            <button className="icon-btn" onClick={() => setCollapsed(!collapsed)}>
+            <button
+              className="icon-btn"
+              onClick={() => setCollapsed(!collapsed)}
+            >
               {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
             </button>
           )}
         </div>
 
         <nav className="nav-list">
-          {menuItems.map((item, index) => {
-            // --- RENDER DROPDOWN ITEM (DEPARTMENTS) ---
-            if (item.isDropdown) {
-              const isActiveParent = location.pathname === '/departments' || location.pathname === '/sub-departments';
-              return (
-                <div key={index}>
-                  <div 
-                    className={`nav-item ${isActiveParent && !deptOpen ? 'active' : ''}`}
-                    onClick={handleDeptClick}
-                    title={collapsed ? item.label : ""}
-                  >
-                    <div className="nav-item-content">
-                      <span className="nav-icon">{item.icon}</span>
-                      <span className="nav-label">{item.label}</span>
+          {menuItems
+            .filter(
+              (item) => !item.roles || item.roles.some((role) => hasRole(role))
+            )
+            .map((item, index) => {
+              // --- RENDER DROPDOWN ITEM (DEPARTMENTS) ---
+              if (item.isDropdown) {
+                const isActiveParent =
+                  location.pathname === "/departments" ||
+                  location.pathname === "/sub-departments";
+                return (
+                  <div key={index}>
+                    <div
+                      className={`nav-item ${
+                        isActiveParent && !deptOpen ? "active" : ""
+                      }`}
+                      onClick={handleDeptClick}
+                      title={collapsed ? item.label : ""}
+                    >
+                      <div className="nav-item-content">
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="nav-label">{item.label}</span>
+                      </div>
+                      {!collapsed && (
+                        <span
+                          className="arrow-icon"
+                          style={{ fontSize: "0.8rem", opacity: 0.7 }}
+                        >
+                          {deptOpen ? <FaChevronUp /> : <FaChevronDown />}
+                        </span>
+                      )}
                     </div>
-                    {!collapsed && (
-                      <span className="arrow-icon" style={{fontSize: '0.8rem', opacity: 0.7}}>
-                        {deptOpen ? <FaChevronUp /> : <FaChevronDown />}
-                      </span>
+                    {/* SUB MENU ITEMS */}
+                    {deptOpen && !collapsed && (
+                      <div className="sub-menu">
+                        {item.subItems.map((sub, i) => (
+                          <NavLink
+                            key={i}
+                            to={sub.path}
+                            className="sub-item"
+                            onClick={() => isMobile && setMobileOpen(false)}
+                          >
+                            {sub.label}
+                          </NavLink>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {/* SUB MENU ITEMS */}
-                  {deptOpen && !collapsed && (
-                    <div className="sub-menu">
-                      {item.subItems.map((sub, i) => (
-                        <NavLink 
-                          key={i} 
-                          to={sub.path} 
-                          className="sub-item"
-                          onClick={() => isMobile && setMobileOpen(false)}
-                        >
-                          {sub.label}
-                        </NavLink>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            }
+                );
+              }
 
-            // --- RENDER STANDARD ITEMS ---
-            return (
-              <NavLink 
-                key={index} 
-                to={item.path} 
-                className="nav-item"
-                title={collapsed ? item.label : ""}
-                onClick={() => isMobile && setMobileOpen(false)}
-              >
-                <div className="nav-item-content">
-                  <span className="nav-icon">{item.icon}</span>
-                  <span className="nav-label">{item.label}</span>
-                </div>
-              </NavLink>
-            );
-          })}
+              // --- RENDER STANDARD ITEMS ---
+              return (
+                <NavLink
+                  key={index}
+                  to={item.path}
+                  className="nav-item"
+                  title={collapsed ? item.label : ""}
+                  onClick={() => isMobile && setMobileOpen(false)}
+                >
+                  <div className="nav-item-content">
+                    <span className="nav-icon">{item.icon}</span>
+                    <span className="nav-label">{item.label}</span>
+                  </div>
+                </NavLink>
+              );
+            })}
         </nav>
 
         <div className="sidebar-footer">
@@ -470,11 +578,19 @@ const Sidebar = ({ children }) => {
           {/* 2. Theme Toggle */}
           <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
             {isDark ? <FaSun color="#f59e0b" /> : <FaMoon color="#6b7280" />}
-            <span className="theme-text">{isDark ? "Light Mode" : "Dark Mode"}</span>
+            <span className="theme-text">
+              {isDark ? "Light Mode" : "Dark Mode"}
+            </span>
           </button>
 
           {/* 3. Sign Out Button */}
-          <button className="signout-btn" onClick={() => alert("Signing out...")}>
+          <button
+            className="signout-btn"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+          >
             <FaSignOutAlt />
             <span className="signout-text">Sign Out</span>
           </button>
@@ -482,8 +598,15 @@ const Sidebar = ({ children }) => {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main style={{ flex: 1, padding: "30px", overflowY: "auto", position: 'relative' }}>
-        {isMobile && <div style={{ height: "40px" }} />} 
+      <main
+        style={{
+          flex: 1,
+          padding: "30px",
+          overflowY: "auto",
+          position: "relative",
+        }}
+      >
+        {isMobile && <div style={{ height: "40px" }} />}
         {children}
       </main>
     </div>

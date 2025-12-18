@@ -11,3 +11,7 @@ export const updatePriceLevel = (id, data) =>
 
 export const deletePriceLevel = (id) =>
   api.delete(`/api/price-levels/${id}`);
+
+// ✅ NEW – Pricing priority resolution
+export const fetchEffectivePrice = (productId) =>
+  api.get(`/api/price-levels/product/${productId}/effective`);

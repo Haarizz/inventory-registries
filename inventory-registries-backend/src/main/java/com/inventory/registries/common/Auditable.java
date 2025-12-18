@@ -26,4 +26,22 @@ public abstract class Auditable {
 
     @LastModifiedBy
     protected String updatedBy;
+    
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    
 }

@@ -32,6 +32,8 @@ const PriceLevels = () => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [priority, setPriority] = useState("");
+
 
   // --- LOADING ---
   useEffect(() => {
@@ -58,7 +60,8 @@ const PriceLevels = () => {
   const loadPriceLevels = async (id) => {
     try {
       const res = await fetchPriceLevels(id);
-      setLevels(res.data);
+      setLevels(res.data.sort((a, b) => a.priority - b.priority));
+
     } catch (error) {
       console.error("Failed to load price levels", error);
     }
@@ -69,15 +72,19 @@ const PriceLevels = () => {
     setEditing(pl);
     setName(pl ? pl.name : "");
     setPrice(pl ? pl.price : "");
+    setPriority(pl ? pl.priority : "");
     setShowModal(true);
   };
+
 
   const closeModal = () => {
     setEditing(null);
     setName("");
     setPrice("");
+    setPriority("");
     setShowModal(false);
   };
+
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -85,9 +92,17 @@ const PriceLevels = () => {
 
     try {
       if (editing) {
-        await updatePriceLevel(editing.id, { name, price });
+        await updatePriceLevel(editing.id, {
+          name,
+          price,
+          priority: Number(priority),
+        });
       } else {
-        await createPriceLevel(productId, { name, price });
+        await createPriceLevel(productId, {
+          name,
+          price,
+          priority: Number(priority),
+        });
       }
       closeModal();
       loadPriceLevels(productId);
@@ -106,6 +121,7 @@ const PriceLevels = () => {
       alert("Failed to delete");
     }
   };
+  
 
   // --- ANALYTICS ---
   const minPrice = levels.length > 0 ? Math.min(...levels.map(l => Number(l.price))) : 0;
@@ -316,21 +332,25 @@ const PriceLevels = () => {
       {/* TOOLBAR */}
       <div className="toolbar-container">
         <div className="product-select-wrapper">
-          <span style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Product:</span>
-          <select 
-            className="product-select" 
-            value={productId} 
-            onChange={e => setProductId(e.target.value)}
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            Product:
+          </span>
+          <select
+            className="product-select"
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
           >
             <option value="">-- Select a Product to Manage Prices --</option>
-            {products.map(p => (
-              <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.code})
+              </option>
             ))}
           </select>
         </div>
 
-        <button 
-          className="btn btn-primary" 
+        <button
+          className="btn btn-primary"
           onClick={() => openModal()}
           disabled={!productId}
           title={!productId ? "Select a product first" : "Add Price Level"}
@@ -347,6 +367,7 @@ const PriceLevels = () => {
               <th style={{ width: 60 }}>
                 <input type="checkbox" disabled />
               </th>
+              <th>Priority</th>
               <th>Tier Name</th>
               <th>Price (INR)</th>
               <th style={{ textAlign: "right" }}>Actions</th>
@@ -355,27 +376,48 @@ const PriceLevels = () => {
           <tbody>
             {!productId ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", padding: '50px 20px', color: 'var(--text-secondary)' }}>
-                  <FaChartLine style={{ fontSize: '2rem', marginBottom: '10px', opacity: 0.5 }} /><br/>
-                  Please select a product from the dropdown above to view its price levels.
+                <td
+                  colSpan="4"
+                  style={{
+                    textAlign: "center",
+                    padding: "50px 20px",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <FaChartLine
+                    style={{
+                      fontSize: "2rem",
+                      marginBottom: "10px",
+                      opacity: 0.5,
+                    }}
+                  />
+                  <br />
+                  Please select a product from the dropdown above to view its
+                  price levels.
                 </td>
               </tr>
             ) : levels.length > 0 ? (
               levels.map((pl) => (
                 <tr key={pl.id}>
-                  <td><input type="checkbox" /></td>
-                  <td style={{ fontWeight: 600 }}>{pl.name}</td>
+                  <td>
+                    <input type="checkbox" />
+                  </td>
+                  <td>{pl.priority}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    {pl.priority === 1 && "⭐ "}
+                    {pl.name}
+                  </td>
                   <td>₹ {Number(pl.price).toFixed(2)}</td>
                   <td style={{ textAlign: "right" }}>
-                    <button 
-                      className="icon-action" 
+                    <button
+                      className="icon-action"
                       onClick={() => openModal(pl)}
                       title="Edit"
                     >
                       <FaEdit />
                     </button>
-                    <button 
-                      className="icon-action delete" 
+                    <button
+                      className="icon-action delete"
                       onClick={() => handleDelete(pl.id)}
                       title="Delete"
                     >
@@ -386,8 +428,16 @@ const PriceLevels = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", padding: 40, color: 'var(--text-secondary)' }}>
-                  No price levels found for this product. Add one to get started.
+                <td
+                  colSpan="4"
+                  style={{
+                    textAlign: "center",
+                    padding: 40,
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  No price levels found for this product. Add one to get
+                  started.
                 </td>
               </tr>
             )}
@@ -399,18 +449,36 @@ const PriceLevels = () => {
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal-panel">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "24px",
+              }}
+            >
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
                 {editing ? "Edit Price Level" : "New Price Level"}
               </h2>
-              <button onClick={closeModal} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-secondary)" }}>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.2rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
                 <FaTimes />
               </button>
             </div>
 
             <form onSubmit={handleSave}>
               <div className="form-control">
-                <label>Tier Name <span style={{ color: "red" }}>*</span></label>
+                <label>
+                  Tier Name <span style={{ color: "red" }}>*</span>
+                </label>
                 <input
                   placeholder="e.g. Wholesale, Retail, Distributor"
                   value={name}
@@ -418,9 +486,23 @@ const PriceLevels = () => {
                   autoFocus
                 />
               </div>
+              <div className="form-control">
+                <label>
+                  Priority (1 = highest) <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                />
+              </div>
 
               <div className="form-control">
-                <label>Price (₹) <span style={{ color: "red" }}>*</span></label>
+                <label>
+                  Price (₹) <span style={{ color: "red" }}>*</span>
+                </label>
                 <input
                   type="number"
                   placeholder="0.00"
@@ -429,7 +511,14 @@ const PriceLevels = () => {
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 24,
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-outline"
@@ -445,7 +534,6 @@ const PriceLevels = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

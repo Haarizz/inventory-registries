@@ -6,12 +6,7 @@ import com.inventory.registries.common.Auditable;
 import jakarta.persistence.*;
 
 @Entity
-@Table(
-    name = "sub_departments",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"name", "department_id"})
-    }
-)
+@Table(name = "sub_departments")
 public class SubDepartment extends Auditable {
 
     @Id
@@ -59,6 +54,7 @@ public class SubDepartment extends Auditable {
 	public void setActive(Boolean active) {
 		this.active = active;
 	}
-
-    // getters & setters
+    
+    
 }
+

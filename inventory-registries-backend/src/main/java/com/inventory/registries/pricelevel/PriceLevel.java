@@ -6,30 +6,28 @@ import com.inventory.registries.product.Product;
 import jakarta.persistence.*;
 
 @Entity
-@Table(
-    name = "price_levels",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"product_id", "name"})
-    }
-)
+@Table(name = "price_levels")
 public class PriceLevel extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(nullable = false)
-    private String name; // Retail, Wholesale, etc.
+    private String name;
 
     @Column(nullable = false)
     private Double price;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private Integer priority;
+
+    @Column(nullable = false)
+    private Boolean active = true;
 
 	public Long getId() {
 		return id;
@@ -63,13 +61,23 @@ public class PriceLevel extends Auditable {
 		this.price = price;
 	}
 
-	public boolean isActive() {
+	public Integer getPriority() {
+		return priority;
+	}
+
+	public void setPriority(Integer priority) {
+		this.priority = priority;
+	}
+
+	public Boolean getActive() {
 		return active;
 	}
 
-	public void setActive(boolean active) {
+	public void setActive(Boolean active) {
 		this.active = active;
 	}
 
     // getters & setters
 }
+
+

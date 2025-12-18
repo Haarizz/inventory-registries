@@ -1,15 +1,13 @@
 package com.inventory.registries.product;
 
-import java.util.List;
-
+import com.inventory.registries.product.dto.ProductRequest;
 import jakarta.validation.Valid;
 
-import org.springframework.http.HttpStatus;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import com.inventory.registries.product.dto.ProductRequest;
 
 @RestController
 @RequestMapping("/api/products")
@@ -21,35 +19,33 @@ public class ProductController {
         this.service = service;
     }
 
-    // ✅ CREATE
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest request) {
-        Product product = service.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(product);
+    // LIST (ACTIVE ONLY)
+    @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SUPERVISOR','ACCOUNTANT','STAFF')")
+    public ResponseEntity<List<Product>> getAll() {
+        return ResponseEntity.ok(service.getAll());
     }
 
-    // ✅ UPDATE
+    // CREATE
+    @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+    public ResponseEntity<Product> create(
+            @Valid @RequestBody ProductRequest req) {
+        return ResponseEntity.ok(service.create(req));
+    }
+
+    // UPDATE
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
     public ResponseEntity<Product> update(
             @PathVariable Long id,
-            @Valid @RequestBody ProductRequest request) {
-
-        Product product = service.update(id, request);
-        return ResponseEntity.ok(product);
+            @Valid @RequestBody ProductRequest req) {
+        return ResponseEntity.ok(service.update(id, req));
     }
 
-    // ✅ LIST
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','STAFF')")
-    public ResponseEntity<List<Product>> list() {
-        return ResponseEntity.ok(service.list());
-    }
-
-    // ✅ DELETE (soft delete recommended)
+    // DELETE (SOFT)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
